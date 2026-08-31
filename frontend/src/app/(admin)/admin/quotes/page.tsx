@@ -1,0 +1,6 @@
+"use client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { quotesApi } from "@/lib/api/quotes";
+import { queryKeys } from "@/lib/query/keys";
+import type { QuoteRequest } from "@/types";
+export default function QuotesPage(){const qc=useQueryClient();const q=useQuery({queryKey:queryKeys.quotes,queryFn:quotesApi.adminList});const m=useMutation({mutationFn:({id,status}:{id:string,status:QuoteRequest['status']})=>quotesApi.updateStatus(id,status),onSuccess:()=>qc.invalidateQueries({queryKey:queryKeys.quotes})});return <div><h1 className="mb-6 text-3xl font-bold text-brand-navy">Quote Requests</h1><div className="space-y-4">{q.data?.map(x=><article key={x.id} className="rounded-2xl bg-white p-5 shadow-sm"><div className="flex flex-wrap justify-between gap-3"><div><b>{x.full_name}</b><p className="text-sm text-slate-500">{x.phone} · {x.location}</p></div><select value={x.status} onChange={e=>m.mutate({id:x.id,status:e.target.value as QuoteRequest['status']})} className="rounded-lg border px-3"><option>NEW</option><option>CONTACTED</option><option>QUOTED</option><option>ACCEPTED</option><option>DECLINED</option></select></div><p className="mt-3 text-sm">{x.notes}</p></article>)}</div></div>}
