@@ -1,4 +1,5 @@
 import uuid
+from django.conf import settings
 from django.db import models
 
 class TimeStampedModel(models.Model):
@@ -36,3 +37,32 @@ class CorporateEnquiry(TimeStampedModel):
 
 class ContactMessage(TimeStampedModel):
     name=models.CharField(max_length=120); email=models.EmailField(); phone=models.CharField(max_length=40,blank=True); message=models.TextField(); is_resolved=models.BooleanField(default=False)
+
+class Booking(TimeStampedModel):
+    class Status(models.TextChoices):
+        PENDING="pending","Pending"
+        CONFIRMED="confirmed","Confirmed"
+        IN_PROGRESS="in_progress","In progress"
+        COMPLETED="completed","Completed"
+        CANCELLED="cancelled","Cancelled"
+
+    reference=models.CharField(max_length=24,unique=True,editable=False)
+    customer=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name="bookings")
+    service=models.ForeignKey(Service,on_delete=models.PROTECT,related_name="bookings")
+    service_date=models.DateField()
+    service_time=models.TimeField()
+    location=models.CharField(max_length=240)
+    phone=models.CharField(max_length=40)
+    alternative_contact=models.CharField(max_length=120,blank=True)
+    notes=models.TextField(blank=True)
+    status=models.CharField(max_length=20,choices=Status.choices,default=Status.PENDING)
+
+    class Meta:
+        ordering=("-service_date","-service_time","-created_at")
+
+    def save(self,*args,**kwargs):
+        if not self.reference:
+            self.reference=f"NCS-{uuid.uuid4().hex[:10].upper()}"
+        super().save(*args,**kwargs)
+
+    def __str__(self): return f"{self.reference} — {self.customer}"

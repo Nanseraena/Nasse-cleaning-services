@@ -3,4 +3,6 @@ export const queryKeys = {
   quotes: ["admin", "quotes"] as const,
   corporateEnquiries: ["admin", "corporate-enquiries"] as const,
   contactMessages: ["admin", "contact-messages"] as const,
+  bookings: ["bookings"] as const,
+  adminBookings: ["admin", "bookings"] as const,
 };

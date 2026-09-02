@@ -1,0 +1,3 @@
+import { Suspense } from "react";
+import { BookingForm } from "@/features/bookings/booking-form";
+export default function BookPage(){return <><section className="bg-slate-50"><div className="mx-auto max-w-6xl px-6 py-12"><p className="text-sm font-bold uppercase tracking-widest text-brand-green">Schedule a clean</p><h1 className="mt-2 text-4xl font-bold text-brand-navy md:text-5xl">Book your cleaning service</h1><p className="mt-4 max-w-2xl text-lg text-slate-600">Choose what you need and when you need it. We’ll keep every detail together in your account.</p></div></section><div className="mx-auto max-w-6xl px-6 py-14"><Suspense fallback={<p>Loading booking form…</p>}><BookingForm/></Suspense></div></>}

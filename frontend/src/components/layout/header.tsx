@@ -25,7 +25,7 @@ export function Header() {
         </Link>
         <nav className="flex items-center gap-5 text-sm font-medium">
           <ServicesMenu /><Link href="/faqs">FAQs</Link><Link href="/corporate">Corporate</Link><Link href="/contact">Contact</Link>
-          <Link href="/quote" className="rounded-full bg-brand-green px-4 py-2 text-white">Get a Quote</Link>
+          <Link href="/book" className="rounded-full bg-brand-green px-4 py-2 text-white">Book now</Link>
           {initialized && (authenticated && user ? (
             <UserAccountControl user={user} />
           ) : (

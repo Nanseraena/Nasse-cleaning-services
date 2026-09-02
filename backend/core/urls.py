@@ -1,3 +1,9 @@
 from django.contrib import admin
 from django.urls import include, path
-urlpatterns=[path("admin/",admin.site.urls),path("api/",include("cleaning.urls"))]
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+urlpatterns=[
+ path("admin/",admin.site.urls),path("api/",include("cleaning.urls")),
+ path("api/schema/",SpectacularAPIView.as_view(),name="api-schema"),
+ path("api/docs/",SpectacularSwaggerView.as_view(url_name="api-schema"),name="swagger-ui"),
+ path("api/redoc/",SpectacularRedocView.as_view(url_name="api-schema"),name="redoc"),
+]

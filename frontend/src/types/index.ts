@@ -33,3 +33,11 @@ export type AdminUser = {
   is_staff: boolean;
   profile_picture?: string | null;
 };
+
+export type BookingStatus = "pending" | "confirmed" | "in_progress" | "completed" | "cancelled";
+export type Booking = {
+  id: string; reference: string; customer: number; customer_name: string; customer_email: string;
+  service: string; service_name: string; service_date: string; service_time: string;
+  location: string; phone: string; alternative_contact: string; notes: string;
+  status: BookingStatus; created_at: string; updated_at: string;
+};
