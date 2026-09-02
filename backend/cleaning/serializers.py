@@ -1,12 +1,51 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import Service, QuoteRequest, CorporateEnquiry, ContactMessage, Booking
+from pathlib import Path
+from .models import Service, QuoteRequest, QuotePhoto, CorporateEnquiry, ContactMessage, Booking
 class ServiceSerializer(serializers.ModelSerializer):
     class Meta: model=Service; fields="__all__"
+class QuotePhotoSerializer(serializers.ModelSerializer):
+    class Meta: model=QuotePhoto; fields=("id","file","original_name","created_at"); read_only_fields=fields
+
 class QuoteRequestSerializer(serializers.ModelSerializer):
-    class Meta: model=QuoteRequest; fields="__all__"; read_only_fields=("status",)
-class AdminQuoteRequestSerializer(serializers.ModelSerializer):
-    class Meta: model=QuoteRequest; fields="__all__"
+    photos=QuotePhotoSerializer(many=True,read_only=True)
+    photo_uploads=serializers.ListField(child=serializers.FileField(),write_only=True,required=False,max_length=5)
+    service_name=serializers.CharField(source="service.name",read_only=True)
+    booking_id=serializers.UUIDField(source="booking.id",read_only=True,allow_null=True)
+
+    class Meta:
+        model=QuoteRequest
+        fields=("id","reference","user","service","service_name","full_name","email","phone","location","property_type","approximate_size","bedrooms","bathrooms","preferred_date","preferred_time","frequency","notes","status","estimated_price","admin_notes","photos","photo_uploads","booking_id","created_at","updated_at")
+        read_only_fields=("id","reference","user","status","estimated_price","admin_notes","booking_id","created_at","updated_at")
+
+    def validate_photo_uploads(self,files):
+        allowed={".jpg",".jpeg",".png",".webp"}
+        for uploaded in files:
+            if Path(uploaded.name).suffix.lower() not in allowed: raise serializers.ValidationError("Only JPG, PNG, and WebP photos are allowed.")
+            if not getattr(uploaded,"content_type","").startswith("image/"): raise serializers.ValidationError(f"{uploaded.name} is not a valid image upload.")
+            if uploaded.size>5*1024*1024: raise serializers.ValidationError(f"{uploaded.name} is larger than 5 MB.")
+        return files
+
+    def validate_preferred_date(self,value):
+        if value and value<timezone.localdate(): raise serializers.ValidationError("Choose today or a future date.")
+        return value
+
+    def create(self,validated_data):
+        files=validated_data.pop("photo_uploads",[])
+        quote=super().create(validated_data)
+        for file in files: QuotePhoto.objects.create(quote=quote,file=file,original_name=file.name)
+        return quote
+
+class AdminQuoteRequestSerializer(QuoteRequestSerializer):
+    class Meta(QuoteRequestSerializer.Meta):
+        read_only_fields=("id","reference","user","booking_id","created_at","updated_at")
+
+    def validate(self,attrs):
+        attrs=super().validate(attrs)
+        status=attrs.get("status",getattr(self.instance,"status",None))
+        price=attrs.get("estimated_price",getattr(self.instance,"estimated_price",None))
+        if status==QuoteRequest.Status.QUOTED and not price: raise serializers.ValidationError({"estimated_price":"Enter an estimated price before sending the quote."})
+        return attrs
 class CorporateEnquirySerializer(serializers.ModelSerializer):
     class Meta: model=CorporateEnquiry; fields="__all__"; read_only_fields=("status",)
 class ContactMessageSerializer(serializers.ModelSerializer):
@@ -14,13 +53,14 @@ class ContactMessageSerializer(serializers.ModelSerializer):
 
 class BookingSerializer(serializers.ModelSerializer):
     service_name=serializers.CharField(source="service.name",read_only=True)
+    quote_reference=serializers.CharField(source="quote.reference",read_only=True,allow_null=True)
     customer_name=serializers.SerializerMethodField()
     customer_email=serializers.EmailField(source="customer.email",read_only=True)
 
     class Meta:
         model=Booking
-        fields=("id","reference","customer","customer_name","customer_email","service","service_name","service_date","service_time","location","phone","alternative_contact","notes","status","created_at","updated_at")
-        read_only_fields=("id","reference","customer","customer_name","customer_email","status","created_at","updated_at")
+        fields=("id","reference","quote","quote_reference","customer","customer_name","customer_email","service","service_name","service_date","service_time","location","phone","alternative_contact","notes","status","created_at","updated_at")
+        read_only_fields=("id","reference","quote","quote_reference","customer","customer_name","customer_email","status","created_at","updated_at")
 
     def get_customer_name(self,obj) -> str:
         return obj.customer.get_full_name() or obj.customer.username
@@ -48,10 +88,10 @@ class CustomerBookingUpdateSerializer(BookingSerializer):
     status=serializers.ChoiceField(choices=((Booking.Status.CANCELLED,"Cancelled"),),required=False)
 
     class Meta(BookingSerializer.Meta):
-        read_only_fields=("id","reference","customer","customer_name","customer_email","created_at","updated_at")
+        read_only_fields=("id","reference","quote","quote_reference","customer","customer_name","customer_email","created_at","updated_at")
 
 class AdminBookingSerializer(BookingSerializer):
     status=serializers.ChoiceField(choices=Booking.Status.choices)
 
     class Meta(BookingSerializer.Meta):
-        read_only_fields=("id","reference","customer","customer_name","customer_email","created_at","updated_at")
+        read_only_fields=("id","reference","quote","quote_reference","customer","customer_name","customer_email","created_at","updated_at")

@@ -4,6 +4,7 @@ from django.db.models import Count
 from .models import (
     Service,
     QuoteRequest,
+    QuotePhoto,
     CorporateEnquiry,
     ContactMessage,
     Booking,
@@ -59,15 +60,15 @@ def mark_quotes_contacted(modeladmin, request, queryset):
     modeladmin.message_user(request, f"{updated} quote(s) marked as contacted.", messages.SUCCESS)
 
 
-@admin.action(description="Mark selected quotes as accepted")
-def mark_quotes_accepted(modeladmin, request, queryset):
-    updated = queryset.update(status=QuoteRequest.Status.ACCEPTED)
-    modeladmin.message_user(request, f"{updated} quote(s) marked as accepted.", messages.SUCCESS)
+class QuotePhotoInline(admin.TabularInline):
+    model = QuotePhoto
+    extra = 0
+    readonly_fields = ("original_name", "file", "created_at")
 
 
 @admin.register(QuoteRequest)
 class QuoteRequestAdmin(admin.ModelAdmin):
-    list_display = ("full_name", "service", "phone", "location", "preferred_date", "status", "created_at")
+    list_display = ("reference", "full_name", "service", "location", "preferred_date", "estimated_price", "status", "created_at")
     list_display_links = ("full_name",)
     list_editable = ("status",)
     list_filter = ("status", "service", "frequency", "preferred_date", "created_at")
@@ -76,15 +77,16 @@ class QuoteRequestAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
     autocomplete_fields = ("service",)
     list_select_related = ("service",)
-    readonly_fields = ("id", "created_at", "updated_at")
-    actions = (mark_quotes_contacted, mark_quotes_accepted)
+    readonly_fields = ("id", "reference", "user", "created_at", "updated_at")
+    actions = (mark_quotes_contacted,)
+    inlines = (QuotePhotoInline,)
     list_per_page = 30
     save_on_top = True
     fieldsets = (
-        ("Customer", {"fields": ("full_name", "email", "phone")}),
-        ("Service request", {"fields": ("service", "location", "property_type", "approximate_size", "preferred_date", "frequency", "notes")}),
-        ("Workflow", {"fields": ("status",)}),
-        ("Audit information", {"classes": ("collapse",), "fields": ("id", "created_at", "updated_at")}),
+        ("Customer", {"fields": ("user", "full_name", "email", "phone")}),
+        ("Service request", {"fields": ("service", "location", "property_type", "bedrooms", "bathrooms", "approximate_size", "preferred_date", "preferred_time", "frequency", "notes")}),
+        ("Estimate", {"fields": ("estimated_price", "admin_notes", "status")}),
+        ("Audit information", {"classes": ("collapse",), "fields": ("id", "reference", "created_at", "updated_at")}),
     )
 
 

@@ -2,6 +2,8 @@ import uuid
 from django.conf import settings
 from django.db import models
 
+def generate_quote_reference(): return f"NAS-Q-{uuid.uuid4().hex[:8].upper()}"
+
 class TimeStampedModel(models.Model):
     id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
     created_at=models.DateTimeField(auto_now_add=True)
@@ -24,11 +26,26 @@ class Service(TimeStampedModel):
 
 class QuoteRequest(TimeStampedModel):
     class Status(models.TextChoices):
-        NEW="NEW","New"; CONTACTED="CONTACTED","Contacted"; QUOTED="QUOTED","Quoted"; ACCEPTED="ACCEPTED","Accepted"; DECLINED="DECLINED","Declined"
+        NEW="NEW","Under review"; CONTACTED="CONTACTED","Contacted"; QUOTED="QUOTED","Estimate sent"; ACCEPTED="ACCEPTED","Accepted"; DECLINED="DECLINED","Declined"
+    reference=models.CharField(max_length=24,unique=True,editable=False,default=generate_quote_reference)
+    user=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name="quote_requests",null=True,blank=True)
     service=models.ForeignKey(Service,on_delete=models.SET_NULL,null=True,blank=True,related_name="quotes")
     full_name=models.CharField(max_length=120); email=models.EmailField(); phone=models.CharField(max_length=40); location=models.CharField(max_length=180)
     property_type=models.CharField(max_length=120,blank=True); approximate_size=models.CharField(max_length=120,blank=True); preferred_date=models.DateField(null=True,blank=True)
+    preferred_time=models.TimeField(null=True,blank=True); bedrooms=models.PositiveSmallIntegerField(null=True,blank=True); bathrooms=models.PositiveSmallIntegerField(null=True,blank=True)
     frequency=models.CharField(max_length=50,blank=True); notes=models.TextField(blank=True); status=models.CharField(max_length=20,choices=Status.choices,default=Status.NEW)
+    estimated_price=models.DecimalField(max_digits=12,decimal_places=0,null=True,blank=True); admin_notes=models.TextField(blank=True)
+
+    def save(self,*args,**kwargs):
+        if not self.reference: self.reference=generate_quote_reference()
+        super().save(*args,**kwargs)
+
+class QuotePhoto(TimeStampedModel):
+    quote=models.ForeignKey(QuoteRequest,on_delete=models.CASCADE,related_name="photos")
+    file=models.FileField(upload_to="quote_photos/%Y/%m/")
+    original_name=models.CharField(max_length=255)
+
+    def __str__(self): return self.original_name
 
 class CorporateEnquiry(TimeStampedModel):
     company_name=models.CharField(max_length=180); contact_name=models.CharField(max_length=120); email=models.EmailField(); phone=models.CharField(max_length=40)
@@ -48,6 +65,7 @@ class Booking(TimeStampedModel):
 
     reference=models.CharField(max_length=24,unique=True,editable=False)
     customer=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name="bookings")
+    quote=models.OneToOneField(QuoteRequest,on_delete=models.SET_NULL,null=True,blank=True,related_name="booking")
     service=models.ForeignKey(Service,on_delete=models.PROTECT,related_name="bookings")
     service_date=models.DateField()
     service_time=models.TimeField()

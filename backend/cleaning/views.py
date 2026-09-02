@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
+from django.db import transaction
 from django.db.models import Q
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -87,24 +88,57 @@ class ServiceDetailView(generics.RetrieveAPIView):
     permission_classes=[permissions.AllowAny]; serializer_class=ServiceSerializer; lookup_field="slug"
     queryset=Service.objects.filter(is_active=True)
 class QuoteCreateView(generics.CreateAPIView):
-    permission_classes=[permissions.AllowAny]; serializer_class=QuoteRequestSerializer; queryset=QuoteRequest.objects.all()
+    permission_classes=[permissions.IsAuthenticated]; serializer_class=QuoteRequestSerializer; queryset=QuoteRequest.objects.all()
+    def perform_create(self,serializer): serializer.save(user=self.request.user)
+
+class CustomerQuoteListView(generics.ListAPIView):
+    permission_classes=[permissions.IsAuthenticated]; serializer_class=QuoteRequestSerializer
+    def get_queryset(self): return QuoteRequest.objects.filter(user=self.request.user).select_related("service").prefetch_related("photos").order_by("-created_at")
+
+class CustomerQuoteDetailView(generics.RetrieveAPIView):
+    permission_classes=[permissions.IsAuthenticated]; serializer_class=QuoteRequestSerializer
+    def get_queryset(self): return QuoteRequest.objects.filter(user=self.request.user).select_related("service").prefetch_related("photos")
+
+class CustomerQuoteResponseView(APIView):
+    permission_classes=[permissions.IsAuthenticated]
+    @extend_schema(
+        tags=["Estimates"],summary="Accept or decline a cleaning estimate",
+        request=inline_serializer(name="EstimateDecisionRequest",fields={"decision":schema_serializers.ChoiceField(choices=("accept","decline"))}),
+        responses={200:inline_serializer(name="EstimateDecisionResponse",fields={"quote":schema_serializers.DictField(required=False),"booking":schema_serializers.DictField(required=False)})},
+    )
+    @transaction.atomic
+    def post(self,request,pk):
+        quote=QuoteRequest.objects.select_for_update().filter(pk=pk,user=request.user).select_related("service").first()
+        if not quote: return Response({"detail":"Quote request not found."},status=404)
+        decision=request.data.get("decision")
+        if quote.status!=QuoteRequest.Status.QUOTED: return Response({"detail":"This estimate is not awaiting a response."},status=400)
+        if decision=="decline":
+            quote.status=QuoteRequest.Status.DECLINED; quote.save(update_fields=("status","updated_at"))
+            return Response(QuoteRequestSerializer(quote,context={"request":request}).data)
+        if decision!="accept": return Response({"decision":["Choose accept or decline."]},status=400)
+        if not all((quote.service,quote.preferred_date,quote.preferred_time)):
+            return Response({"detail":"A service date and time are required before this estimate can be accepted."},status=400)
+        if Booking.objects.filter(service=quote.service,service_date=quote.preferred_date,service_time=quote.preferred_time).exclude(status=Booking.Status.CANCELLED).exists():
+            return Response({"detail":"That appointment time is no longer available. Please contact us to choose another."},status=400)
+        booking=Booking.objects.create(customer=request.user,quote=quote,service=quote.service,service_date=quote.preferred_date,service_time=quote.preferred_time,location=quote.location,phone=quote.phone,notes=quote.notes,status=Booking.Status.CONFIRMED)
+        quote.status=QuoteRequest.Status.ACCEPTED; quote.save(update_fields=("status","updated_at"))
+        return Response({"quote":QuoteRequestSerializer(quote,context={"request":request}).data,"booking":BookingSerializer(booking,context={"request":request}).data})
 class CorporateEnquiryCreateView(generics.CreateAPIView):
     permission_classes=[permissions.AllowAny]; serializer_class=CorporateEnquirySerializer; queryset=CorporateEnquiry.objects.all()
 class ContactMessageCreateView(generics.CreateAPIView):
     permission_classes=[permissions.AllowAny]; serializer_class=ContactMessageSerializer; queryset=ContactMessage.objects.all()
 class AdminQuoteListView(generics.ListAPIView):
-    permission_classes=[permissions.IsAdminUser]; serializer_class=AdminQuoteRequestSerializer; queryset=QuoteRequest.objects.all().order_by("-created_at")
+    permission_classes=[permissions.IsAdminUser]; serializer_class=AdminQuoteRequestSerializer; queryset=QuoteRequest.objects.select_related("service","user").prefetch_related("photos").order_by("-created_at")
 class AdminQuoteDetailView(generics.RetrieveUpdateAPIView):
-    permission_classes=[permissions.IsAdminUser]; serializer_class=AdminQuoteRequestSerializer; queryset=QuoteRequest.objects.all()
+    permission_classes=[permissions.IsAdminUser]; serializer_class=AdminQuoteRequestSerializer; queryset=QuoteRequest.objects.select_related("service","user").prefetch_related("photos")
 class AdminCorporateListView(generics.ListAPIView):
     permission_classes=[permissions.IsAdminUser]; serializer_class=CorporateEnquirySerializer; queryset=CorporateEnquiry.objects.all().order_by("-created_at")
 class AdminContactListView(generics.ListAPIView):
     permission_classes=[permissions.IsAdminUser]; serializer_class=ContactMessageSerializer; queryset=ContactMessage.objects.all().order_by("-created_at")
 
-class CustomerBookingListCreateView(generics.ListCreateAPIView):
+class CustomerBookingListCreateView(generics.ListAPIView):
     permission_classes=[permissions.IsAuthenticated]; serializer_class=BookingSerializer
     def get_queryset(self): return Booking.objects.filter(customer=self.request.user).select_related("service","customer")
-    def perform_create(self,serializer): serializer.save(customer=self.request.user)
 
 class CustomerBookingDetailView(generics.RetrieveUpdateAPIView):
     permission_classes=[permissions.IsAuthenticated]

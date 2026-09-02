@@ -61,6 +61,9 @@ export function UserAccountControl({ user }: { user: AdminUser }) {
       <Link role="menuitem" href="/bookings" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100">
         <CalendarIcon /> My bookings
       </Link>
+      <Link role="menuitem" href="/estimates" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100">
+        <EstimateIcon /> My estimates
+      </Link>
       <button role="menuitem" type="button" onClick={openSignOutConfirmation} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-red-600 hover:bg-red-50">
         <LogoutIcon /> Log out
       </button>
@@ -94,3 +97,4 @@ function LogoutIcon() {
 function CalendarIcon() {
   return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5"><rect x="3" y="5" width="18" height="16" rx="2"/><path strokeLinecap="round" d="M8 3v4m8-4v4M3 10h18"/></svg>;
 }
+function EstimateIcon(){return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-4 2-4-2-3 2V5a2 2 0 0 1 2-2Z"/><path d="M8 8h8M8 12h6"/></svg>}
