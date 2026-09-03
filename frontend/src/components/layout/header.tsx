@@ -26,7 +26,7 @@ export function Header() {
           />
         </Link>
         <nav className="flex flex-wrap items-center justify-end gap-x-5 gap-y-3 text-sm font-medium">
-          <ServicesMenu /><Link href="/areas">Areas We Serve</Link><Link href="/faqs">FAQs</Link><Link href="/contact">Contact</Link>
+          <ServicesMenu /><Link href="/about">About Us</Link><Link href="/areas">Areas We Serve</Link><Link href="/faqs">FAQs</Link><Link href="/contact">Contact</Link>
           <Link href="/book" onClick={(event) => { if (!requireAuthentication()) event.preventDefault(); }} className="rounded-full bg-brand-green px-4 py-2 text-white">Book now</Link>
           {initialized && authenticated && user && <UserAccountControl user={user} />}
         </nav>
