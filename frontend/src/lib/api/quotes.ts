@@ -2,7 +2,7 @@ import { api } from "./client";
 import type { QuoteRequest } from "@/types";
 
 export type CreateQuotePayload = {
-  service: string; full_name: string; email: string; phone: string; location: string;
+  service: string; service_area: string; full_name: string; email: string; phone: string; location: string;
   property_type: string; bedrooms?: number; bathrooms?: number; preferred_date: string;
   preferred_time: string; notes?: string; photos?: File[];
 };

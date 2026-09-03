@@ -1,5 +1,6 @@
 export const queryKeys = {
   services: ["services"] as const,
+  serviceAreas: ["service-areas"] as const,
   quotes: ["admin", "quotes"] as const,
   myQuotes: ["my-quotes"] as const,
   corporateEnquiries: ["admin", "corporate-enquiries"] as const,

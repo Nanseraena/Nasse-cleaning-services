@@ -25,14 +25,10 @@ export function Header() {
             className="h-14 w-auto"
           />
         </Link>
-        <nav className="flex items-center gap-5 text-sm font-medium">
-          <ServicesMenu /><Link href="/faqs">FAQs</Link><Link href="/corporate">Corporate</Link><Link href="/contact">Contact</Link>
+        <nav className="flex flex-wrap items-center justify-end gap-x-5 gap-y-3 text-sm font-medium">
+          <ServicesMenu /><Link href="/areas">Areas We Serve</Link><Link href="/faqs">FAQs</Link><Link href="/contact">Contact</Link>
           <Link href="/book" onClick={(event) => { if (!requireAuthentication()) event.preventDefault(); }} className="rounded-full bg-brand-green px-4 py-2 text-white">Book now</Link>
-          {initialized && (authenticated && user ? (
-            <UserAccountControl user={user} />
-          ) : (
-            <Link href="/login" className="text-brand-navy">Sign in</Link>
-          ))}
+          {initialized && authenticated && user && <UserAccountControl user={user} />}
         </nav>
       </div>
     </header>
