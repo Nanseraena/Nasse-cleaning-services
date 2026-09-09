@@ -8,8 +8,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers as schema_serializers
-from .models import Service, QuoteRequest, CorporateEnquiry, ContactMessage, Booking
-from .serializers import ServiceSerializer, QuoteRequestSerializer, AdminQuoteRequestSerializer, CorporateEnquirySerializer, ContactMessageSerializer, BookingSerializer, CustomerBookingUpdateSerializer, AdminBookingSerializer
+from .models import Service, ServiceArea, AreaInterest, QuoteRequest, CorporateEnquiry, ContactMessage, Booking
+from .serializers import ServiceSerializer, ServiceAreaSerializer, AreaInterestSerializer, QuoteRequestSerializer, AdminQuoteRequestSerializer, CorporateEnquirySerializer, ContactMessageSerializer, BookingSerializer, CustomerBookingUpdateSerializer, AdminBookingSerializer
 
 def user_payload(user):
     return {"id":user.id,"username":user.username,"email":user.email,"first_name":user.first_name,"last_name":user.last_name,"is_staff":user.is_staff,"profile_picture":None}
@@ -87,17 +87,22 @@ class ServiceListView(generics.ListAPIView):
 class ServiceDetailView(generics.RetrieveAPIView):
     permission_classes=[permissions.AllowAny]; serializer_class=ServiceSerializer; lookup_field="slug"
     queryset=Service.objects.filter(is_active=True)
+class ServiceAreaListView(generics.ListAPIView):
+    permission_classes=[permissions.AllowAny]; serializer_class=ServiceAreaSerializer
+    queryset=ServiceArea.objects.all().order_by("name")
+class AreaInterestCreateView(generics.CreateAPIView):
+    permission_classes=[permissions.AllowAny]; serializer_class=AreaInterestSerializer; queryset=AreaInterest.objects.all()
 class QuoteCreateView(generics.CreateAPIView):
     permission_classes=[permissions.IsAuthenticated]; serializer_class=QuoteRequestSerializer; queryset=QuoteRequest.objects.all()
     def perform_create(self,serializer): serializer.save(user=self.request.user)
 
 class CustomerQuoteListView(generics.ListAPIView):
     permission_classes=[permissions.IsAuthenticated]; serializer_class=QuoteRequestSerializer
-    def get_queryset(self): return QuoteRequest.objects.filter(user=self.request.user).select_related("service").prefetch_related("photos").order_by("-created_at")
+    def get_queryset(self): return QuoteRequest.objects.filter(user=self.request.user).select_related("service","service_area").prefetch_related("photos").order_by("-created_at")
 
 class CustomerQuoteDetailView(generics.RetrieveAPIView):
     permission_classes=[permissions.IsAuthenticated]; serializer_class=QuoteRequestSerializer
-    def get_queryset(self): return QuoteRequest.objects.filter(user=self.request.user).select_related("service").prefetch_related("photos")
+    def get_queryset(self): return QuoteRequest.objects.filter(user=self.request.user).select_related("service","service_area").prefetch_related("photos")
 
 class CustomerQuoteResponseView(APIView):
     permission_classes=[permissions.IsAuthenticated]
@@ -108,7 +113,7 @@ class CustomerQuoteResponseView(APIView):
     )
     @transaction.atomic
     def post(self,request,pk):
-        quote=QuoteRequest.objects.select_for_update().filter(pk=pk,user=request.user).select_related("service").first()
+        quote=QuoteRequest.objects.select_for_update().filter(pk=pk,user=request.user).select_related("service","service_area").first()
         if not quote: return Response({"detail":"Quote request not found."},status=404)
         decision=request.data.get("decision")
         if quote.status!=QuoteRequest.Status.QUOTED: return Response({"detail":"This estimate is not awaiting a response."},status=400)
@@ -120,7 +125,9 @@ class CustomerQuoteResponseView(APIView):
             return Response({"detail":"A service date and time are required before this estimate can be accepted."},status=400)
         if Booking.objects.filter(service=quote.service,service_date=quote.preferred_date,service_time=quote.preferred_time).exclude(status=Booking.Status.CANCELLED).exists():
             return Response({"detail":"That appointment time is no longer available. Please contact us to choose another."},status=400)
-        booking=Booking.objects.create(customer=request.user,quote=quote,service=quote.service,service_date=quote.preferred_date,service_time=quote.preferred_time,location=quote.location,phone=quote.phone,notes=quote.notes,status=Booking.Status.CONFIRMED)
+        if not quote.service_area or quote.service_area.status!=ServiceArea.Status.ACTIVE:
+            return Response({"detail":"This service area is no longer active."},status=400)
+        booking=Booking.objects.create(customer=request.user,quote=quote,service=quote.service,service_area=quote.service_area,service_date=quote.preferred_date,service_time=quote.preferred_time,location=quote.location,phone=quote.phone,notes=quote.notes,status=Booking.Status.CONFIRMED)
         quote.status=QuoteRequest.Status.ACCEPTED; quote.save(update_fields=("status","updated_at"))
         return Response({"quote":QuoteRequestSerializer(quote,context={"request":request}).data,"booking":BookingSerializer(booking,context={"request":request}).data})
 class CorporateEnquiryCreateView(generics.CreateAPIView):
@@ -128,9 +135,9 @@ class CorporateEnquiryCreateView(generics.CreateAPIView):
 class ContactMessageCreateView(generics.CreateAPIView):
     permission_classes=[permissions.AllowAny]; serializer_class=ContactMessageSerializer; queryset=ContactMessage.objects.all()
 class AdminQuoteListView(generics.ListAPIView):
-    permission_classes=[permissions.IsAdminUser]; serializer_class=AdminQuoteRequestSerializer; queryset=QuoteRequest.objects.select_related("service","user").prefetch_related("photos").order_by("-created_at")
+    permission_classes=[permissions.IsAdminUser]; serializer_class=AdminQuoteRequestSerializer; queryset=QuoteRequest.objects.select_related("service","service_area","user").prefetch_related("photos").order_by("-created_at")
 class AdminQuoteDetailView(generics.RetrieveUpdateAPIView):
-    permission_classes=[permissions.IsAdminUser]; serializer_class=AdminQuoteRequestSerializer; queryset=QuoteRequest.objects.select_related("service","user").prefetch_related("photos")
+    permission_classes=[permissions.IsAdminUser]; serializer_class=AdminQuoteRequestSerializer; queryset=QuoteRequest.objects.select_related("service","service_area","user").prefetch_related("photos")
 class AdminCorporateListView(generics.ListAPIView):
     permission_classes=[permissions.IsAdminUser]; serializer_class=CorporateEnquirySerializer; queryset=CorporateEnquiry.objects.all().order_by("-created_at")
 class AdminContactListView(generics.ListAPIView):
@@ -138,17 +145,17 @@ class AdminContactListView(generics.ListAPIView):
 
 class CustomerBookingListCreateView(generics.ListAPIView):
     permission_classes=[permissions.IsAuthenticated]; serializer_class=BookingSerializer
-    def get_queryset(self): return Booking.objects.filter(customer=self.request.user).select_related("service","customer")
+    def get_queryset(self): return Booking.objects.filter(customer=self.request.user).select_related("service","service_area","customer")
 
 class CustomerBookingDetailView(generics.RetrieveUpdateAPIView):
     permission_classes=[permissions.IsAuthenticated]
-    def get_queryset(self): return Booking.objects.filter(customer=self.request.user).select_related("service","customer")
+    def get_queryset(self): return Booking.objects.filter(customer=self.request.user).select_related("service","service_area","customer")
     def get_serializer_class(self): return BookingSerializer if self.request.method=="GET" else CustomerBookingUpdateSerializer
 
 class AdminBookingListView(generics.ListAPIView):
     permission_classes=[permissions.IsAdminUser]; serializer_class=AdminBookingSerializer
-    queryset=Booking.objects.select_related("service","customer").all()
+    queryset=Booking.objects.select_related("service","service_area","customer").all()
 
 class AdminBookingDetailView(generics.RetrieveUpdateAPIView):
     permission_classes=[permissions.IsAdminUser]; serializer_class=AdminBookingSerializer
-    queryset=Booking.objects.select_related("service","customer").all()
+    queryset=Booking.objects.select_related("service","service_area","customer").all()

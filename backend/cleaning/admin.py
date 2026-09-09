@@ -3,6 +3,8 @@ from django.db.models import Count
 
 from .models import (
     Service,
+    ServiceArea,
+    AreaInterest,
     QuoteRequest,
     QuotePhoto,
     CorporateEnquiry,
@@ -54,6 +56,27 @@ class ServiceAdmin(admin.ModelAdmin):
         return obj._quote_count
 
 
+@admin.register(ServiceArea)
+class ServiceAreaAdmin(admin.ModelAdmin):
+    list_display = ("name", "status", "transport_charge", "updated_at")
+    list_editable = ("status", "transport_charge")
+    list_filter = ("status", "created_at", "updated_at")
+    search_fields = ("name", "slug", "description")
+    prepopulated_fields = {"slug": ("name",)}
+    readonly_fields = ("id", "created_at", "updated_at")
+    ordering = ("name",)
+    fieldsets = (("Coverage", {"fields": ("name", "slug", "status", "description", "transport_charge")}), ("Audit", {"classes": ("collapse",), "fields": ("id", "created_at", "updated_at")}))
+
+
+@admin.register(AreaInterest)
+class AreaInterestAdmin(admin.ModelAdmin):
+    list_display = ("area_name", "name", "email", "phone", "is_notified", "created_at")
+    list_editable = ("is_notified",)
+    list_filter = ("area_name", "is_notified", "created_at")
+    search_fields = ("area_name", "name", "email", "phone")
+    readonly_fields = ("id", "created_at", "updated_at")
+
+
 @admin.action(description="Mark selected quotes as contacted")
 def mark_quotes_contacted(modeladmin, request, queryset):
     updated = queryset.update(status=QuoteRequest.Status.CONTACTED)
@@ -68,15 +91,15 @@ class QuotePhotoInline(admin.TabularInline):
 
 @admin.register(QuoteRequest)
 class QuoteRequestAdmin(admin.ModelAdmin):
-    list_display = ("reference", "full_name", "service", "location", "preferred_date", "estimated_price", "status", "created_at")
+    list_display = ("reference", "full_name", "service", "service_area", "location", "preferred_date", "estimated_price", "status", "created_at")
     list_display_links = ("full_name",)
     list_editable = ("status",)
-    list_filter = ("status", "service", "frequency", "preferred_date", "created_at")
+    list_filter = ("status", "service", "service_area", "frequency", "preferred_date", "created_at")
     search_fields = ("full_name", "email", "phone", "location", "property_type", "notes")
     ordering = ("-created_at",)
     date_hierarchy = "created_at"
-    autocomplete_fields = ("service",)
-    list_select_related = ("service",)
+    autocomplete_fields = ("service", "service_area")
+    list_select_related = ("service", "service_area")
     readonly_fields = ("id", "reference", "user", "created_at", "updated_at")
     actions = (mark_quotes_contacted,)
     inlines = (QuotePhotoInline,)
@@ -84,7 +107,7 @@ class QuoteRequestAdmin(admin.ModelAdmin):
     save_on_top = True
     fieldsets = (
         ("Customer", {"fields": ("user", "full_name", "email", "phone")}),
-        ("Service request", {"fields": ("service", "location", "property_type", "bedrooms", "bathrooms", "approximate_size", "preferred_date", "preferred_time", "frequency", "notes")}),
+        ("Service request", {"fields": ("service", "service_area", "location", "property_type", "bedrooms", "bathrooms", "approximate_size", "preferred_date", "preferred_time", "frequency", "notes")}),
         ("Estimate", {"fields": ("estimated_price", "admin_notes", "status")}),
         ("Audit information", {"classes": ("collapse",), "fields": ("id", "reference", "created_at", "updated_at")}),
     )
@@ -161,21 +184,21 @@ def confirm_bookings(modeladmin, request, queryset):
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ("reference", "customer", "service", "service_date", "service_time", "location", "status", "created_at")
+    list_display = ("reference", "customer", "service", "service_area", "service_date", "service_time", "location", "status", "created_at")
     list_display_links = ("reference",)
     list_editable = ("status",)
-    list_filter = ("status", "service", "service_date", "created_at")
+    list_filter = ("status", "service", "service_area", "service_date", "created_at")
     search_fields = ("reference", "customer__username", "customer__email", "customer__first_name", "customer__last_name", "phone", "location", "notes")
     ordering = ("-service_date", "-service_time")
     date_hierarchy = "service_date"
-    autocomplete_fields = ("service", "customer")
-    list_select_related = ("service", "customer")
+    autocomplete_fields = ("service", "service_area", "customer")
+    list_select_related = ("service", "service_area", "customer")
     readonly_fields = ("id", "reference", "created_at", "updated_at")
     actions = (confirm_bookings,)
     list_per_page = 30
     save_on_top = True
     fieldsets = (
-        ("Booking", {"fields": ("reference", "customer", "service", "service_date", "service_time", "status")}),
+        ("Booking", {"fields": ("reference", "customer", "service", "service_area", "service_date", "service_time", "status")}),
         ("Location and contact", {"fields": ("location", "phone", "alternative_contact")}),
         ("Customer instructions", {"fields": ("notes",)}),
         ("Audit information", {"classes": ("collapse",), "fields": ("id", "created_at", "updated_at")}),

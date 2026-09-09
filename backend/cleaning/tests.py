@@ -5,7 +5,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
-from .models import Service
+from .models import Service, ServiceArea
 class PublicApiTests(TestCase):
     def test_services_are_public(self):
         service,_=Service.objects.get_or_create(name="Office Cleaning",slug="office-cleaning",defaults={"category":"COMMERCIAL","short_description":"Professional office cleaning"})
@@ -13,16 +13,25 @@ class PublicApiTests(TestCase):
         self.assertEqual(response.status_code,200)
         self.assertIn(str(service.id),[item["id"] for item in response.json()])
 
+    def test_service_areas_are_public_and_interest_can_be_registered(self):
+        area=ServiceArea.objects.create(name="Wakiso",slug="wakiso-public",status=ServiceArea.Status.ACTIVE,transport_charge=15000)
+        response=APIClient().get("/api/service-areas/")
+        self.assertEqual(response.status_code,200)
+        self.assertIn(str(area.id),[item["id"] for item in response.json()])
+        interest=APIClient().post("/api/area-interests/",{"area_name":"Gulu","name":"Customer","email":"customer@example.com"},format="json")
+        self.assertEqual(interest.status_code,201)
+
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="nasse-test-media-"))
 class BookingApiTests(TestCase):
     def setUp(self):
         self.user=get_user_model().objects.create_user(username="customer@example.com",email="customer@example.com",password="Password1!")
         self.other=get_user_model().objects.create_user(username="other@example.com",email="other@example.com",password="Password1!")
         self.service=Service.objects.create(name="Deep Cleaning",slug="deep-cleaning-test",category="RESIDENTIAL",short_description="A deep clean")
+        self.area=ServiceArea.objects.create(name="Kampala",slug="kampala-test",status=ServiceArea.Status.ACTIVE)
         self.client=APIClient()
 
     def payload(self,days=2):
-        return {"service":str(self.service.id),"full_name":"Customer Name","email":self.user.email,"phone":"+256700000000","location":"Kampala","property_type":"Apartment","bedrooms":3,"bathrooms":2,"preferred_date":str(timezone.localdate()+timedelta(days=days)),"preferred_time":"10:00","notes":"Two bedrooms"}
+        return {"service":str(self.service.id),"service_area":str(self.area.id),"full_name":"Customer Name","email":self.user.email,"phone":"+256700000000","location":"Kampala","property_type":"Apartment","bedrooms":3,"bathrooms":2,"preferred_date":str(timezone.localdate()+timedelta(days=days)),"preferred_time":"10:00","notes":"Two bedrooms"}
 
     def test_authentication_is_required(self):
         self.assertEqual(self.client.post("/api/quotes/",self.payload(),format="json").status_code,401)
@@ -56,3 +65,10 @@ class BookingApiTests(TestCase):
     def test_past_quote_date_is_rejected(self):
         self.client.force_authenticate(self.user)
         self.assertEqual(self.client.post("/api/quotes/",self.payload(-1),format="json").status_code,400)
+
+    def test_inactive_service_area_is_rejected(self):
+        self.area.status=ServiceArea.Status.COMING_SOON; self.area.save(update_fields=("status",))
+        self.client.force_authenticate(self.user)
+        response=self.client.post("/api/quotes/",self.payload(),format="json")
+        self.assertEqual(response.status_code,400)
+        self.assertIn("do not currently operate",str(response.data))
