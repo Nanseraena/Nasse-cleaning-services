@@ -31,7 +31,7 @@ class BookingApiTests(TestCase):
         self.client=APIClient()
 
     def payload(self,days=2):
-        return {"service":str(self.service.id),"service_area":str(self.area.id),"full_name":"Customer Name","email":self.user.email,"phone":"+256700000000","location":"Kampala","property_type":"Apartment","bedrooms":3,"bathrooms":2,"preferred_date":str(timezone.localdate()+timedelta(days=days)),"preferred_time":"10:00","notes":"Two bedrooms"}
+        return {"service":str(self.service.id),"service_area":str(self.area.id),"full_name":"Customer Name","email":self.user.email,"phone":"+256779393684","location":"Kampala","property_type":"Apartment","bedrooms":3,"bathrooms":2,"preferred_date":str(timezone.localdate()+timedelta(days=days)),"preferred_time":"10:00","notes":"Two bedrooms"}
 
     def test_authentication_is_required(self):
         self.assertEqual(self.client.post("/api/quotes/",self.payload(),format="json").status_code,401)
