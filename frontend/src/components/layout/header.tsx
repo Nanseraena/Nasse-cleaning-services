@@ -13,24 +13,35 @@ export function Header() {
   const user = useSelector(selectUser);
   const { requireAuthentication } = useAuthenticatedAction("/book");
   return (
-    <header className="border-b bg-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-        <Link href="/" aria-label="Nasse Cleaning Services home">
+    <header className="sticky top-0 z-40 border-b bg-white/95 backdrop-blur-md">
+      <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between px-4 sm:px-6 lg:px-8 py-3">
+        <Link href="/" aria-label="Nasse Cleaning Services home" className="flex items-center shrink-0">
           <Image
             src="/assests/Nasse_Cleaning_Services_Logo.svg"
             alt="Nasse Cleaning Services"
             width={1508}
             height={993}
             priority
-            className="h-14 w-auto"
+            className="h-10 sm:h-12 w-auto object-contain"
           />
         </Link>
-        <nav className="flex flex-wrap items-center justify-end gap-x-5 gap-y-3 text-sm font-medium">
-          <ServicesMenu /><Link href="/about">About Us</Link><Link href="/areas">Areas We Serve</Link><Link href="/faqs">FAQs</Link><Link href="/contact">Contact</Link>
-          <Link href="/book" onClick={(event) => { if (!requireAuthentication()) event.preventDefault(); }} className="rounded-full bg-brand-green px-4 py-2 text-white">Book now</Link>
+        <nav className="flex flex-wrap items-center justify-end gap-x-5 gap-y-2 text-sm font-medium">
+          <ServicesMenu />
+          <Link href="/about" className="hover:text-brand-green transition-colors">About Us</Link>
+          <Link href="/areas" className="hover:text-brand-green transition-colors">Areas We Serve</Link>
+          <Link href="/faqs" className="hover:text-brand-green transition-colors">FAQs</Link>
+          <Link href="/contact" className="hover:text-brand-green transition-colors">Contact</Link>
+          <Link
+            href="/book"
+            onClick={(event) => { if (!requireAuthentication()) event.preventDefault(); }}
+            className="rounded-full bg-brand-green px-5 py-2 text-white font-semibold shadow-sm hover:bg-opacity-95 transition-all"
+          >
+            Book now
+          </Link>
           {initialized && authenticated && user && <UserAccountControl user={user} />}
         </nav>
       </div>
     </header>
   );
 }
+

@@ -89,7 +89,8 @@ export function UgandaServiceMap() {
   }
 
   return (
-    <section className="mx-auto max-w-6xl px-5 py-12 md:px-6 md:py-16">
+    <section className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+
       <div className="max-w-3xl">
         <p className="text-sm font-bold uppercase tracking-[0.2em] text-brand-green">Coverage across Uganda</p>
         <h1 className="mt-3 text-4xl font-bold tracking-tight text-brand-navy md:text-5xl">Find cleaning services near you</h1>
