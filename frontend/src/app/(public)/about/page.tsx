@@ -7,10 +7,30 @@ export const metadata: Metadata = {
 };
 
 const beliefs = [
-  ["01", "Details matter.", "The corners, the surfaces, and the places people normally overlook."],
-  ["02", "Your space deserves respect.", "Home, office, or construction site — we treat the space like it's ours."],
-  ["03", "Reliable means showing up.", "Great cleaning only matters when you can depend on the people doing it."],
-  ["04", "Clean should feel different.", "We want you to notice the difference the moment you walk back in."],
+  {
+    title: "Details matter.",
+    copy: "The corners, the surfaces, and the places people normally overlook.",
+    image: "/images/standard-spray-bottle.png",
+    alt: "Professional surface spray bottle with fine cleaning mist",
+  },
+  {
+    title: "Your space deserves respect.",
+    copy: "Home, office, or construction site — we treat the space like it's ours.",
+    image: "/images/standard-scrub-brush.png",
+    alt: "Handcrafted natural bristle scrub brush",
+  },
+  {
+    title: "Reliable means showing up.",
+    copy: "Great cleaning only matters when you can depend on the people doing it.",
+    image: "/images/standard-soap-bucket.png",
+    alt: "Polished stainless cleaning bucket with foaming soap lather and sponges",
+  },
+  {
+    title: "Clean should feel different.",
+    copy: "We want you to notice the difference the moment you walk back in.",
+    image: "/images/standard-microfiber.png",
+    alt: "Neatly stacked microfiber cleaning towels with streak-free cleaner",
+  },
 ];
 
 const spaces = [
@@ -36,7 +56,7 @@ export default function AboutPage() {
     <main className="overflow-hidden bg-[#fbfcf9] text-brand-ink">
 
       {/* ── Hero & Our Story ── */}
-      <section className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pt-12 pb-20 md:pt-16 md:pb-28">
+      <section className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pt-10 pb-14 md:pt-14 md:pb-20">
         <div className="grid items-start gap-10 lg:grid-cols-[1.1fr_.9fr] lg:gap-16">
 
           {/* Left: headline + story copy */}
@@ -85,24 +105,36 @@ export default function AboutPage() {
       </section>
 
       {/* ── Standards / Beliefs ── */}
-      <section className="bg-white py-20 md:py-28">
+      <section className="bg-white py-14 md:py-20">
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
+          <div className="text-center mb-12 md:mb-16">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-green">What clean means to us</p>
-            <h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-brand-navy md:text-5xl whitespace-nowrap">
+            <h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-brand-navy md:text-5xl">
               The standards behind every reset.
             </h2>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {beliefs.map(([number, title, copy]) => (
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+            {beliefs.map(({ title, copy, image, alt }, idx) => (
               <div
-                key={number}
-                className="rounded-3xl bg-[#fbfcf9] p-6 border border-slate-200/80 flex flex-col"
+                key={idx}
+                className="flex flex-col items-center text-center px-2 group"
               >
-                <span className="font-mono text-sm font-bold text-brand-green">{number}</span>
-                <h3 className="mt-3 text-xl font-bold text-brand-navy">{title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">{copy}</p>
+                <div className="relative h-28 w-28 sm:h-32 sm:w-32 transition-transform duration-300 group-hover:scale-105">
+                  <Image
+                    src={image}
+                    alt={alt}
+                    fill
+                    sizes="(max-width: 640px) 112px, 128px"
+                    className="object-contain"
+                  />
+                </div>
+                <h3 className="mt-5 text-xl font-bold leading-snug text-brand-navy">
+                  {title}
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                  {copy}
+                </p>
               </div>
             ))}
           </div>
@@ -110,7 +142,7 @@ export default function AboutPage() {
       </section>
 
       {/* ── Full-width Image Banner ── */}
-      <section className="relative min-h-[500px] overflow-hidden bg-brand-navy md:min-h-[600px]">
+      <section className="relative min-h-[420px] overflow-hidden bg-brand-navy md:min-h-[540px]">
         <Image
           src="/images/about-workspace-reset.png"
           alt="A professional cleaner making a final check in a freshly prepared workplace"
@@ -119,7 +151,7 @@ export default function AboutPage() {
           className="object-cover object-center"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#061a2d]/95 via-[#061a2d]/55 to-transparent" />
-        <div className="relative mx-auto flex min-h-[500px] max-w-[1400px] items-center px-4 sm:px-6 lg:px-8 py-16 text-white md:min-h-[600px]">
+        <div className="relative mx-auto flex min-h-[420px] max-w-[1400px] items-center px-4 sm:px-6 lg:px-8 py-12 text-white md:min-h-[540px]">
           <div className="max-w-xl">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-green-300">Spaces, ready for life</p>
             <h2 className="mt-5 text-4xl font-semibold leading-[.96] tracking-[-0.05em] md:text-6xl">
@@ -133,42 +165,46 @@ export default function AboutPage() {
       </section>
 
       {/* ── Care That Fits the Space ── */}
-      <section className="bg-[#fbfcf9] py-20 md:py-28">
+      <section className="bg-[#fbfcf9] py-14 md:py-20">
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-12 lg:grid-cols-[1fr_1.6fr] lg:gap-16 items-start">
 
-            {/* Left: image + explore link */}
-            <div className="flex flex-col gap-6">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem] bg-slate-200 shadow-md">
-                <Image
-                  src="/images/care-fits-space.jpg"
-                  alt="A spotless, freshly reset open-plan office space"
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 40vw"
-                  className="object-cover"
-                />
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-green">Made for real spaces</p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-brand-navy md:text-4xl">
-                  Care that fits the space.
-                </h2>
-                <Link
-                  href="/services"
-                  className="group mt-5 inline-flex items-center gap-2 rounded-full bg-brand-navy px-6 py-3 font-bold text-white text-sm hover:bg-brand-green transition-all duration-300"
-                >
-                  Explore all services <Arrow />
-                </Link>
-              </div>
+          {/* Section header: Heading left, Explore right */}
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-10">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-green">Made for real spaces</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-brand-navy md:text-5xl">
+                Care that fits the space.
+              </h2>
+            </div>
+            <Link
+              href="/services"
+              className="group inline-flex items-center gap-2 rounded-full bg-brand-navy px-6 py-3 font-bold text-white text-sm hover:bg-brand-green transition-all duration-300 w-fit"
+            >
+              Explore all services <Arrow />
+            </Link>
+          </div>
+
+          {/* Image + space list side by side with matched heights */}
+          <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr] lg:gap-14 items-stretch">
+
+            {/* Left: image matching the height of the right list */}
+            <div className="relative min-h-[360px] h-full w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-md">
+              <Image
+                src="/images/care-fits-space.jpg"
+                alt="A spotless, freshly reset open-plan office space"
+                fill
+                sizes="(max-width: 1024px) 100vw, 40vw"
+                className="object-cover"
+              />
             </div>
 
             {/* Right: space list */}
-            <div className="border-t border-brand-ink/20">
+            <div className="flex flex-col justify-between border-t border-brand-ink/20">
               {spaces.map(([number, title, copy]) => (
                 <Link
                   href="/services"
                   key={number}
-                  className="group grid items-center gap-4 border-b border-brand-ink/20 py-7 transition-colors hover:bg-white sm:grid-cols-[4rem_1fr_1.5fr_auto]"
+                  className="group grid items-center gap-4 border-b border-brand-ink/20 py-6 transition-colors hover:bg-white sm:grid-cols-[4rem_1fr_1.5fr_auto]"
                 >
                   <span className="font-mono text-sm text-brand-green">{number}</span>
                   <h3 className="text-2xl font-semibold text-brand-navy md:text-3xl">{title}</h3>
@@ -182,7 +218,7 @@ export default function AboutPage() {
       </section>
 
       {/* ── Thoughtful Process ── */}
-      <section className="bg-[#edf3e8] py-20 md:py-28">
+      <section className="bg-[#edf3e8] py-14 md:py-20">
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-green">
             Cleaning, without the guesswork
@@ -191,35 +227,24 @@ export default function AboutPage() {
             A thoughtful process from first look to final reset.
           </h2>
 
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {process.map(([number, title, copy]) => (
               <div
                 key={number}
-                className="group relative flex flex-col justify-between rounded-3xl bg-white p-7 shadow-sm border border-slate-200/80 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                className="group relative flex flex-col rounded-3xl bg-white pt-10 pb-7 px-7 shadow-sm border border-slate-200/80 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
               >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#edf3e8] text-sm font-bold text-brand-green font-mono">
-                      {number}
-                    </span>
-                    <span className="text-xs font-bold uppercase tracking-widest text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                      Step {number}
-                    </span>
-                  </div>
-
-                  <h3 className="mt-8 text-xl font-bold leading-snug text-brand-navy group-hover:text-brand-green transition-colors">
-                    {title}
-                  </h3>
-
-                  <p className="mt-3 text-sm leading-relaxed text-slate-600">
-                    {copy}
-                  </p>
+                {/* Floating circle at top center */}
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-brand-green text-sm font-bold text-white font-mono shadow-md">
+                  {number}
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-brand-green">
-                  <span>Phase {number}</span>
-                  <span className="group-hover:translate-x-1 transition-transform">→</span>
-                </div>
+                <h3 className="mt-2 text-xl font-bold leading-snug text-brand-navy text-center group-hover:text-brand-green transition-colors">
+                  {title}
+                </h3>
+
+                <p className="mt-3 text-sm leading-relaxed text-slate-600 text-center">
+                  {copy}
+                </p>
               </div>
             ))}
           </div>
@@ -227,7 +252,7 @@ export default function AboutPage() {
       </section>
 
       {/* ── CTA Section ── */}
-      <section className="bg-white py-20 md:py-28">
+      <section className="bg-white py-14 md:py-20">
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-green">Ready when you are</p>
           <h2 className="mx-auto mt-4 max-w-4xl text-4xl font-semibold leading-tight tracking-[-0.05em] text-brand-navy md:text-6xl">
