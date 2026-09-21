@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { servicesApi } from "@/lib/api/services";
+import { ServiceDetailSkeleton } from "@/components/common/loading-skeletons";
 import { RichTextContent } from "@/components/common/rich-text-content";
 import { ServiceNavigation } from "./service-navigation";
 import { ServicesFaq } from "./services-faq";
@@ -60,11 +61,7 @@ export function ServiceDetail({ slug }: { slug: string }) {
   });
 
   if (isLoading) {
-    return (
-      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 py-16 text-slate-600">
-        Loading service details…
-      </div>
-    );
+    return <ServiceDetailSkeleton />;
   }
 
   if (isError || !service) {

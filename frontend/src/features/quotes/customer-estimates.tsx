@@ -33,6 +33,8 @@ const money = (value: string) =>
     maximumFractionDigits: 0,
   }).format(Number(value));
 
+import { ListItemsSkeleton } from "@/components/common/loading-skeletons";
+
 export function CustomerEstimates() {
   const initialized = useSelector(selectAuthInitialized);
   const authenticated = useSelector(selectIsAuthenticated);
@@ -60,7 +62,9 @@ export function CustomerEstimates() {
     onError: () => toast.error("We could not update this estimate."),
   });
 
-  if (!initialized) return <p className="text-slate-500">Checking your session…</p>;
+  if (!initialized || (authenticated && query.isLoading)) {
+    return <ListItemsSkeleton count={3} />;
+  }
 
   if (!authenticated) {
     return (
@@ -76,8 +80,6 @@ export function CustomerEstimates() {
       </div>
     );
   }
-
-  if (query.isLoading) return <p className="text-slate-500">Loading estimates…</p>;
 
   const quotes = query.data ?? [];
 

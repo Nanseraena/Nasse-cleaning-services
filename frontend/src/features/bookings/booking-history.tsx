@@ -26,6 +26,8 @@ const colors: Record<BookingStatus, string> = {
   cancelled: "bg-slate-200 text-slate-700 border border-slate-300",
 };
 
+import { ListItemsSkeleton } from "@/components/common/loading-skeletons";
+
 export function BookingHistory() {
   const authenticated = useSelector(selectIsAuthenticated);
   const initialized = useSelector(selectAuthInitialized);
@@ -49,8 +51,8 @@ export function BookingHistory() {
     onError: () => toast.error("Could not cancel this booking."),
   });
 
-  if (!initialized) {
-    return <p className="text-slate-500">Checking your session…</p>;
+  if (!initialized || (authenticated && query.isLoading)) {
+    return <ListItemsSkeleton count={3} />;
   }
 
   if (!authenticated) {
@@ -60,16 +62,12 @@ export function BookingHistory() {
         <p className="mt-3 text-slate-600">Your booking history is private and only available in your account.</p>
         <Link
           href="/login?next=%2Fbookings"
-          className="mt-6 inline-block rounded-full bg-brand-navy px-7 py-3.5 font-bold text-white shadow-md hover:bg-opacity-95 transition-all"
+          className="mt-6 inline-block rounded-full bg-brand-navy px-8 py-3.5 font-bold text-white shadow-md hover:bg-opacity-95 transition-all"
         >
           Sign in
         </Link>
       </div>
     );
-  }
-
-  if (query.isLoading) {
-    return <p className="text-slate-500">Loading your bookings…</p>;
   }
 
   if (query.isError) {

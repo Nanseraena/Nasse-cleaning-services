@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { FormSkeleton } from "@/components/common/loading-skeletons";
 import { QuoteForm } from "@/features/quotes/quote-form";
 
 export const metadata: Metadata = {
@@ -25,7 +26,7 @@ export default function QuotePage() {
       </section>
 
       <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-10 md:py-14">
-        <Suspense fallback={<p className="text-slate-500">Loading estimate form…</p>}>
+        <Suspense fallback={<FormSkeleton />}>
           <QuoteForm mode="quote" />
         </Suspense>
       </div>
