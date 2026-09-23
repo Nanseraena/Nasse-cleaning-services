@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSelector } from "react-redux";
@@ -97,7 +98,32 @@ export function QuoteForm({ mode }: QuoteFormProps) {
         router.push(`/estimates?created=${encodeURIComponent(quote.reference)}`);
       }
     },
-    onError: () => {
+    onError: (err: unknown) => {
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          toast.info("Your session expired. Please sign in again.");
+          router.push(loginPath(returnPath));
+          return;
+        }
+        const data = err.response?.data;
+        if (data && typeof data === "object") {
+          if ("detail" in data && typeof data.detail === "string") {
+            toast.error(data.detail);
+            return;
+          }
+          const messages = Object.entries(data)
+            .map(([field, msg]) => {
+              const text = Array.isArray(msg) ? msg.join(" ") : String(msg);
+              const fieldName = field === "non_field_errors" ? "" : `${field.replaceAll("_", " ")}: `;
+              return `${fieldName}${text}`;
+            })
+            .filter(Boolean);
+          if (messages.length > 0) {
+            toast.error(messages.join(" | "));
+            return;
+          }
+        }
+      }
       toast.error("Could not submit your request. Please check all details and try again.");
     },
   });
@@ -113,6 +139,18 @@ export function QuoteForm({ mode }: QuoteFormProps) {
     event.preventDefault();
     if (!authenticated) {
       router.push(loginPath(returnPath));
+      return;
+    }
+    if (!form.service) {
+      toast.error("Please select a cleaning service.");
+      return;
+    }
+    if (!form.service_area) {
+      toast.error("Please select a service area district.");
+      return;
+    }
+    if (selectedArea && selectedArea.status !== "active") {
+      toast.error("The selected district is not currently active for direct bookings. Please select an active district (e.g. Kampala, Wakiso, Mukono).");
       return;
     }
     mutation.mutate({

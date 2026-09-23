@@ -37,7 +37,7 @@ class LoginView(APIView):
             if matched: username=matched.username
         user=authenticate(username=username,password=request.data.get("password"))
         if not user: return Response({"detail":"Invalid credentials"},status=status.HTTP_401_UNAUTHORIZED)
-        refresh=RefreshToken.for_user(user); response=Response({"user":user_payload(user)})
+        refresh=RefreshToken.for_user(user); response=Response({"user":user_payload(user),"access":str(refresh.access_token),"refresh":str(refresh)})
         set_auth_cookies(response,refresh.access_token,refresh); return response
 
 class SignupView(APIView):
@@ -58,19 +58,19 @@ class SignupView(APIView):
             return Response({"email":["An account with this email already exists."]},status=400)
         names=full_name.split(maxsplit=1)
         user=User.objects.create_user(username=email,email=email,password=password,first_name=names[0],last_name=names[1] if len(names)>1 else "")
-        refresh=RefreshToken.for_user(user); response=Response({"user":user_payload(user)},status=201)
+        refresh=RefreshToken.for_user(user); response=Response({"user":user_payload(user),"access":str(refresh.access_token),"refresh":str(refresh)},status=201)
         set_auth_cookies(response,refresh.access_token,refresh); return response
 
 class RefreshView(APIView):
     permission_classes=[permissions.AllowAny]
     @extend_schema(tags=["Authentication"],summary="Refresh authentication cookies",request=None,responses={200:inline_serializer(name="RefreshResponse",fields={"ok":schema_serializers.BooleanField()})})
     def post(self,request):
-        raw=request.COOKIES.get("refresh_token")
+        raw=request.COOKIES.get("refresh_token") or request.data.get("refresh")
         if not raw: return Response({"detail":"No refresh token"},status=401)
         try:
             old=RefreshToken(raw); user_id=old["user_id"]
             from django.contrib.auth import get_user_model
-            user=get_user_model().objects.get(pk=user_id); new=RefreshToken.for_user(user); response=Response({"ok":True}); set_auth_cookies(response,new.access_token,new); return response
+            user=get_user_model().objects.get(pk=user_id); new=RefreshToken.for_user(user); response=Response({"ok":True,"access":str(new.access_token),"refresh":str(new)}); set_auth_cookies(response,new.access_token,new); return response
         except Exception: return Response({"detail":"Session expired"},status=401)
 
 class LogoutView(APIView):
