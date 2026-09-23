@@ -14,7 +14,6 @@ export default function EstimatesPage() {
     <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-10 md:py-14">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-brand-green">Your account</p>
           <h1 className="mt-2 text-3xl sm:text-4xl font-extrabold text-brand-navy">Estimates & Quotes</h1>
         </div>
         <Link

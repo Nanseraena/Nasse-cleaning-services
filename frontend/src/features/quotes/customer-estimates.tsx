@@ -68,7 +68,7 @@ export function CustomerEstimates() {
 
   if (!authenticated) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+      <div className=" bg-white p-10 text-center shadow-sm">
         <h2 className="text-2xl font-bold text-brand-navy">Sign in to view your estimates</h2>
         <p className="mt-3 text-slate-600">Your estimates and quotes are private to your account.</p>
         <Link
