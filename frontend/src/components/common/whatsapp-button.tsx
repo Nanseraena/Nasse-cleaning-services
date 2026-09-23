@@ -6,7 +6,7 @@ export function WhatsAppButton() {
   const [showTooltip, setShowTooltip] = useState(true);
 
   const rawNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "256779393684"; // Default number if not set in env
-  // Clean phone number (strip non-digits and leading + for wa.me format)
+  
   const phoneNumber = rawNumber.replace(/[^0-9]/g, "");
 
   const message =

@@ -37,7 +37,7 @@ class LoginView(APIView):
             if matched: username=matched.username
         user=authenticate(username=username,password=request.data.get("password"))
         if not user: return Response({"detail":"Invalid credentials"},status=status.HTTP_401_UNAUTHORIZED)
-        refresh=RefreshToken.for_user(user); response=Response({"user":user_payload(user)})
+        refresh=RefreshToken.for_user(user); response=Response({"user":user_payload(user),"access":str(refresh.access_token),"refresh":str(refresh)})
         set_auth_cookies(response,refresh.access_token,refresh); return response
 
 class SignupView(APIView):
@@ -58,19 +58,19 @@ class SignupView(APIView):
             return Response({"email":["An account with this email already exists."]},status=400)
         names=full_name.split(maxsplit=1)
         user=User.objects.create_user(username=email,email=email,password=password,first_name=names[0],last_name=names[1] if len(names)>1 else "")
-        refresh=RefreshToken.for_user(user); response=Response({"user":user_payload(user)},status=201)
+        refresh=RefreshToken.for_user(user); response=Response({"user":user_payload(user),"access":str(refresh.access_token),"refresh":str(refresh)},status=201)
         set_auth_cookies(response,refresh.access_token,refresh); return response
 
 class RefreshView(APIView):
     permission_classes=[permissions.AllowAny]
     @extend_schema(tags=["Authentication"],summary="Refresh authentication cookies",request=None,responses={200:inline_serializer(name="RefreshResponse",fields={"ok":schema_serializers.BooleanField()})})
     def post(self,request):
-        raw=request.COOKIES.get("refresh_token")
+        raw=request.COOKIES.get("refresh_token") or request.data.get("refresh")
         if not raw: return Response({"detail":"No refresh token"},status=401)
         try:
             old=RefreshToken(raw); user_id=old["user_id"]
             from django.contrib.auth import get_user_model
-            user=get_user_model().objects.get(pk=user_id); new=RefreshToken.for_user(user); response=Response({"ok":True}); set_auth_cookies(response,new.access_token,new); return response
+            user=get_user_model().objects.get(pk=user_id); new=RefreshToken.for_user(user); response=Response({"ok":True,"access":str(new.access_token),"refresh":str(new)}); set_auth_cookies(response,new.access_token,new); return response
         except Exception: return Response({"detail":"Session expired"},status=401)
 
 class LogoutView(APIView):
@@ -94,7 +94,23 @@ class AreaInterestCreateView(generics.CreateAPIView):
     permission_classes=[permissions.AllowAny]; serializer_class=AreaInterestSerializer; queryset=AreaInterest.objects.all()
 class QuoteCreateView(generics.CreateAPIView):
     permission_classes=[permissions.IsAuthenticated]; serializer_class=QuoteRequestSerializer; queryset=QuoteRequest.objects.all()
-    def perform_create(self,serializer): serializer.save(user=self.request.user)
+    def perform_create(self,serializer):
+        quote = serializer.save(user=self.request.user)
+        if quote.service and quote.preferred_date and quote.preferred_time:
+            Booking.objects.get_or_create(
+                quote=quote,
+                defaults={
+                    "customer": self.request.user,
+                    "service": quote.service,
+                    "service_area": quote.service_area,
+                    "service_date": quote.preferred_date,
+                    "service_time": quote.preferred_time,
+                    "location": quote.location,
+                    "phone": quote.phone,
+                    "notes": quote.notes,
+                    "status": Booking.Status.PENDING,
+                }
+            )
 
 class CustomerQuoteListView(generics.ListAPIView):
     permission_classes=[permissions.IsAuthenticated]; serializer_class=QuoteRequestSerializer
@@ -119,15 +135,32 @@ class CustomerQuoteResponseView(APIView):
         if quote.status!=QuoteRequest.Status.QUOTED: return Response({"detail":"This estimate is not awaiting a response."},status=400)
         if decision=="decline":
             quote.status=QuoteRequest.Status.DECLINED; quote.save(update_fields=("status","updated_at"))
+            Booking.objects.filter(quote=quote,status=Booking.Status.PENDING).update(status=Booking.Status.CANCELLED)
             return Response(QuoteRequestSerializer(quote,context={"request":request}).data)
         if decision!="accept": return Response({"decision":["Choose accept or decline."]},status=400)
         if not all((quote.service,quote.preferred_date,quote.preferred_time)):
             return Response({"detail":"A service date and time are required before this estimate can be accepted."},status=400)
-        if Booking.objects.filter(service=quote.service,service_date=quote.preferred_date,service_time=quote.preferred_time).exclude(status=Booking.Status.CANCELLED).exists():
+        conflicting=Booking.objects.filter(service=quote.service,service_date=quote.preferred_date,service_time=quote.preferred_time).exclude(status=Booking.Status.CANCELLED)
+        existing_booking=Booking.objects.filter(quote=quote).first()
+        if existing_booking:
+            conflicting=conflicting.exclude(pk=existing_booking.pk)
+        if conflicting.exists():
             return Response({"detail":"That appointment time is no longer available. Please contact us to choose another."},status=400)
         if not quote.service_area or quote.service_area.status!=ServiceArea.Status.ACTIVE:
             return Response({"detail":"This service area is no longer active."},status=400)
-        booking=Booking.objects.create(customer=request.user,quote=quote,service=quote.service,service_area=quote.service_area,service_date=quote.preferred_date,service_time=quote.preferred_time,location=quote.location,phone=quote.phone,notes=quote.notes,status=Booking.Status.CONFIRMED)
+        if existing_booking:
+            existing_booking.status=Booking.Status.CONFIRMED
+            existing_booking.service=quote.service
+            existing_booking.service_area=quote.service_area
+            existing_booking.service_date=quote.preferred_date
+            existing_booking.service_time=quote.preferred_time
+            existing_booking.location=quote.location
+            existing_booking.phone=quote.phone
+            existing_booking.notes=quote.notes
+            existing_booking.save()
+            booking=existing_booking
+        else:
+            booking=Booking.objects.create(customer=request.user,quote=quote,service=quote.service,service_area=quote.service_area,service_date=quote.preferred_date,service_time=quote.preferred_time,location=quote.location,phone=quote.phone,notes=quote.notes,status=Booking.Status.CONFIRMED)
         quote.status=QuoteRequest.Status.ACCEPTED; quote.save(update_fields=("status","updated_at"))
         return Response({"quote":QuoteRequestSerializer(quote,context={"request":request}).data,"booking":BookingSerializer(booking,context={"request":request}).data})
 class CorporateEnquiryCreateView(generics.CreateAPIView):

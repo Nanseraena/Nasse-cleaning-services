@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import axios from "axios";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { enquiriesApi } from "@/lib/api/enquiries";
@@ -76,7 +77,27 @@ export function CorporateForm() {
       });
       setPhotos([]);
     },
-    onError: () => {
+    onError: (err: unknown) => {
+      if (axios.isAxiosError(err)) {
+        const data = err.response?.data;
+        if (data && typeof data === "object") {
+          if ("detail" in data && typeof data.detail === "string") {
+            toast.error(data.detail);
+            return;
+          }
+          const messages = Object.entries(data)
+            .map(([field, msg]) => {
+              const text = Array.isArray(msg) ? msg.join(" ") : String(msg);
+              const fieldName = field === "non_field_errors" ? "" : `${field.replaceAll("_", " ")}: `;
+              return `${fieldName}${text}`;
+            })
+            .filter(Boolean);
+          if (messages.length > 0) {
+            toast.error(messages.join(" | "));
+            return;
+          }
+        }
+      }
       toast.error("Could not submit corporate enquiry. Please check your details and try again.");
     },
   });

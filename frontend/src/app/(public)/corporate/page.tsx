@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { FormSkeleton } from "@/components/common/loading-skeletons";
 import { CorporateForm } from "@/features/enquiries/corporate-form";
 
 export default function CorporatePage() {
@@ -21,7 +22,7 @@ export default function CorporatePage() {
 
       {/* Main Form Container */}
       <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-10 md:py-14">
-        <Suspense fallback={<p className="text-slate-500">Loading corporate form…</p>}>
+        <Suspense fallback={<FormSkeleton />}>
           <CorporateForm />
         </Suspense>
       </div>
