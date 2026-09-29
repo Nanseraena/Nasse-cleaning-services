@@ -2,6 +2,7 @@
 const nextConfig = {
   skipTrailingSlashRedirect: true,
   async rewrites() {
+    if (!process.env.BACKEND_URL) return [];
     return [
       {
         source: "/api/:path*",

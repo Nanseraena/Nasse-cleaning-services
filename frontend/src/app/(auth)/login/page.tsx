@@ -35,8 +35,16 @@ function LoginForm() {
       const { user } = await authApi.login(identifier, password);
       dispatch(setSession(user));
       router.replace(destination);
-    } catch {
-      toast.error("Incorrect email or password");
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && "response" in err) {
+        const axiosErr = err as { response?: { data?: { detail?: string } } };
+        toast.error(axiosErr.response?.data?.detail ?? "Incorrect email or password");
+      } else if (typeof err === "object" && err !== null && "message" in err) {
+        const messageErr = err as { message: string };
+        toast.error(`Connection error: ${messageErr.message}`);
+      } else {
+        toast.error("Could not sign in. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
