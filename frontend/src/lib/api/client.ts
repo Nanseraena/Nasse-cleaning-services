@@ -1,6 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+const API_URL = "/api";
 
 const ACCESS_TOKEN_KEY = "nasse_access_token";
 const REFRESH_TOKEN_KEY = "nasse_refresh_token";
@@ -29,7 +29,7 @@ export function clearAuthTokens() {
 
 export const api = axios.create({
   baseURL: API_URL,
-  timeout: 30000,
+  timeout: 60000,
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
