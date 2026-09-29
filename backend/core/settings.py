@@ -103,7 +103,7 @@ CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:3000,h
 CORS_ALLOW_CREDENTIALS = True
 # Frontend origins plus the API's own origin (needed for /admin/ login over HTTPS)
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS + env_list("CSRF_EXTRA_ORIGINS")
-
+SECURE_SSL_REDIRECT = True
 # Cookies / HTTPS
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "False").lower() == "true"
 COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "Lax")
